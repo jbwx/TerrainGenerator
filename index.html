@@ -1,0 +1,306 @@
+<html>
+    <input type="text" id="seedBox" name="seedBox" placeholder="Seed">
+    <button type="button" onclick="doEverything()">Generate</button><br><br>
+    <canvas id="myCanvas" width="400" height="400" style="border:1px solid #000000; height:90vh; image-rendering: pixelated;"></canvas>
+</html>
+
+<script>
+
+    doEverything();
+
+    function doEverything(){
+
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+    ctx.beginPath();
+
+    let genseed = document.getElementById("seedBox").value;
+
+    //generate 2 macro chunks
+    for(let x = 0; x < 2; x++){
+        for(let y = 0; y < 2; y++){
+            drawMacroChunk(x,y);
+        }
+    }
+
+    // drawMacroChunk(0,0);
+    // drawMacroChunk(1,0);
+
+    function drawMacroChunk(macroX, macroY){
+        let macroChunkSize = 200;
+        let baseX = Math.ceil(hashHandler(macroX, macroY, "macroBaseX", macroChunkSize/20, -1));
+        let baseY = Math.ceil(hashHandler(macroX, macroY, "macroBaseY", macroChunkSize/20, -1));
+
+        let mtopLine     = [0, 0];
+        let mbottomLine  = [0, 0];
+        let mleftLine    = [0, 0];
+        let mrightLine   = [0, 0];
+
+        /*   MAKE CORNER VALUES (Float 0-2)  */
+        let mc1 = hashHandler(macroX,   macroY,    "MacroCorner", 2, 0);
+        let mc2 = hashHandler(macroX+1, macroY,    "MacroCorner", 2, 0);
+        let mc3 = hashHandler(macroX+1, macroY+1,  "MacroCorner", 2, 0);
+        let mc4 = hashHandler(macroX,   macroY+1,  "MacroCorner", 2, 0);
+
+        /* MAKE TOP WAVE VALUES (Float 1-4)  */
+        let maTop = hashHandler(macroX,   macroY,    "MacroHorizA", 4, 1);
+        let mbTop = hashHandler(macroX,   macroY,    "MacroHorizB", 4, 1);
+        let mcTop = hashHandler(macroX,   macroY,    "MacroHorizC", 4, 1);
+
+        /*MAKE BOTTOM WAVE VALUES (Float 1-4)*/
+        let maBottom = hashHandler(macroX,   macroY+1,  "MacroHorizA", 4, 1);
+        let mbBottom = hashHandler(macroX,   macroY+1,  "MacroHorizB", 4, 1);
+        let mcBottom = hashHandler(macroX,   macroY+1,  "MacroHorizC", 4, 1);
+
+        /* GET RIGHT WAVE VALUES (Float 1-4) */
+        let maRight = hashHandler(macroX+1, macroY,    "MacroVertA", 4, 1);
+        let mbRight = hashHandler(macroX+1, macroY,    "MacroVertB", 4, 1);
+        let mcRight = hashHandler(macroX+1, macroY,    "MacroVertC", 4, 1);
+
+        /* MAKE LEFT WAVE VALUES (Float 1-4) */
+        let maLeft = hashHandler(macroX,   macroY,    "MacroVertA", 4, 1);
+        let mbLeft = hashHandler(macroX,   macroY,    "MacroVertB", 4, 1);
+        let mcLeft = hashHandler(macroX,   macroY,    "MacroVertC", 4, 1);
+
+        let mindex = 0;
+        for(let j = 2; j < 4; j+=(2/200)){ // Top
+            mtopLine[mindex] = 1 - (combineFunc(j, mc1, mc2, maTop, mbTop, mcTop));
+            mbottomLine[mindex] = 1 - (combineFunc(j, mc4, mc3, maBottom, mbBottom, mcBottom));
+            mrightLine[mindex] = 1 - (combineFunc(j, mc2, mc3, maRight, mbRight, mcRight));
+            mleftLine[mindex] = 1 - (combineFunc(j, mc1, mc4, maLeft, mbLeft, mcLeft));
+            mindex++; // should equal 200 by the end
+        }
+
+        for(let x = 0; x < macroChunkSize/20; x++){
+            for(let y = 0; y < macroChunkSize/20; y++){
+                drawChunk(x,y, macroX, macroY, baseX, baseY, macroChunkSize);
+                }
+            }
+        
+
+    function drawChunk(localX, localY, macroX, macroY, baseX, baseY, cLim){
+
+
+        let h = (macroX*cLim)+(localX*20);
+        let k = (macroY*cLim)+(localY*20);
+
+        let topLine     = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+        let bottomLine  = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+        let leftLine    = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+        let rightLine   = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+
+        let x = localX;
+        let y = localY;
+
+        /*   MAKE CORNER VALUES (Float 0-2)  */
+        let c1 = hashHandler(x,   y,    "corner" + "#" + macroX + "#" + macroY + "#", 2, 0);
+        let c2 = hashHandler(x+1, y,    "corner" + "#" + macroX + "#" + macroY + "#", 2, 0);
+        let c3 = hashHandler(x+1, y+1,  "corner" + "#" + macroX + "#" + macroY + "#", 2, 0);
+        let c4 = hashHandler(x,   y+1,  "corner" + "#" + macroX + "#" + macroY + "#", 2, 0);
+
+        /* MAKE TOP WAVE VALUES (Float 1-4)  */
+        let aTop = hashHandler(x,   y,    "horizA" + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let bTop = hashHandler(x,   y,    "horizB" + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let cTop = hashHandler(x,   y,    "horizC" + "#" + macroX + "#" + macroY + "#", 4, 1);
+
+        /*MAKE BOTTOM WAVE VALUES (Float 1-4)*/
+        let aBottom = hashHandler(x,   y+1,  "horizA" + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let bBottom = hashHandler(x,   y+1,  "horizB" + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let cBottom = hashHandler(x,   y+1,  "horizC" + "#" + macroX + "#" + macroY + "#", 4, 1);
+
+        /* GET RIGHT WAVE VALUES (Float 1-4) */
+        let aRight = hashHandler(x+1, y,    "vertA"  + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let bRight = hashHandler(x+1, y,    "vertB"  + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let cRight = hashHandler(x+1, y,    "vertC"  + "#" + macroX + "#" + macroY + "#", 4, 1);
+
+        /* MAKE LEFT WAVE VALUES (Float 1-4) */
+        let aLeft = hashHandler(x,   y,    "vertA"  + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let bLeft = hashHandler(x,   y,    "vertB"  + "#" + macroX + "#" + macroY + "#", 4, 1);
+        let cLeft = hashHandler(x,   y,    "vertC"  + "#" + macroX + "#" + macroY + "#", 4, 1);
+
+        if(y == (cLim/20)-1){ // if bottom edge
+
+            c3 = hashHandler(x+1, 0,  "corner" + "#" + macroX + "#" + (macroY+1) + "#", 2, 0);
+            c4 = hashHandler(x,   0,  "corner" + "#" + macroX + "#" + (macroY+1) + "#", 2, 0);
+
+             aBottom = hashHandler(x,   0,  "horizA" + "#" + macroX + "#" + (macroY+1) + "#", 4, 1);
+             bBottom = hashHandler(x,   0,  "horizB" + "#" + macroX + "#" + (macroY+1) + "#", 4, 1);
+             cBottom = hashHandler(x,   0,  "horizC" + "#" + macroX + "#" + (macroY+1) + "#", 4, 1);
+        }
+
+        if(x == (cLim/20)-1){ // if right edge
+             c2 = hashHandler(0, y,    "corner" + "#" + (macroX+1) + "#" + macroY + "#", 2, 0);
+             c3 = hashHandler(0, y+1,  "corner" + "#" + (macroX+1) + "#" + macroY + "#", 2, 0);
+
+             aRight = hashHandler(0, y,    "vertA"  + "#" + (macroX+1) + "#" + macroY + "#", 4, 1);
+             bRight = hashHandler(0, y,    "vertB"  + "#" + (macroX+1) + "#" + macroY + "#", 4, 1);
+             cRight = hashHandler(0, y,    "vertC"  + "#" + (macroX+1) + "#" + macroY + "#", 4, 1);
+        }
+
+        if(x == (cLim/20)-1 && y == (cLim/20)-1){ // if corner
+            c3 = hashHandler(0,   0,  "corner" + "#" + (macroX+1) + "#" + (macroY+1) + "#", 2, 0);
+        }
+
+
+        x = 0;
+
+        let index = 0;
+
+        for(let j = 2; j < 4; j+=0.1){ // Top
+            topLine[index] = 1 - (combineFunc(j, c1, c2, aTop, bTop, cTop));
+            bottomLine[index] = 1 - (combineFunc(j, c4, c3, aBottom, bBottom, cBottom));
+            rightLine[index] = 1 - (combineFunc(j, c2, c3, aRight, bRight, cRight));
+            leftLine[index] = 1 - (combineFunc(j, c1, c4, aLeft, bLeft, cLeft));
+            index++; // should equal 20 by the end
+        }
+
+        let granularity = 0.1;
+
+        let highest = 0;
+        let lowest = 255;
+
+        for(let x = 0; x < 20; x++){
+            for(let y = 0; y < 20; y++){
+
+                let mmax = 200;
+                let mt = mtopLine[(localX*20)+x] * ((mmax-((localY*20)+y))/mmax); // closer
+                let mb = mbottomLine[(localX*20)+x] * (((localY*20)+y)/mmax); // further
+                let ml = mleftLine[(localY*20)+y] * ((mmax-((localX*20)+x))/mmax); // closer
+                let mr = mrightLine[(localY*20)+y] * (((localX*20)+x)/mmax); // further
+
+                //console.log(mrightLine);
+
+                let max = 20;
+                let t = topLine[x] * ((max-y)/max); // closer
+                let b = bottomLine[x] * (y/max); // further
+                let l = leftLine[y] * ((max-x)/max); // closer
+                let r = rightLine[y] * (x/max); // further
+
+                // micro
+                let tnum = ((64-granularity)+(granularity*(((Math.ceil(((t + b + l + r)/8)*(256/granularity)))))));
+                // macro
+                let mnum = ((64-granularity)+(granularity*(((Math.ceil(((mt + mb + ml + mr)/8)*(256/granularity)))))));
+
+                //console.log(localX, localY, mnum);
+
+                let num = ((4/8)*tnum) + ((12/8)*mnum);
+
+                if(num < lowest){
+                    lowest = num;
+                }
+
+                if(num > highest){
+                    highest = num;
+                }
+
+                // let ap = '';
+                // if(num < 16){ // avoid invalid hex values
+                //     ap = '0'; // appendor
+                // }
+                // num = num.toString(16);
+
+                if(num > 170){
+                    ctx.fillStyle = "#00c000";
+                } else if(num > 158){
+                    ctx.fillStyle = "#00a000";
+                } else if (num > 147){
+                    ctx.fillStyle = "#008000";
+                } else if (num > 135) {
+                    ctx.fillStyle = "#006000"; // end grass
+                } else if (num > 132){
+                    ctx.fillStyle = "#ffff00";
+                } else if (num > 130){
+                    ctx.fillStyle = "#dddd00";
+                } else if (num > 127){
+                    ctx.fillStyle = "#cccc00";
+                } else if(num > 124){
+                    ctx.fillStyle = "#aaaa00"; // end sand
+                } else if (num > 93){
+                    ctx.fillStyle = "#0000ff";
+                } else if (num > 70){
+                    ctx.fillStyle = "#0000dd";
+                } else if (num > 47){
+                    ctx.fillStyle = "#0000cc";
+                } else if (num > 23){
+                    ctx.fillStyle = "#0000aa"; // end water
+                }
+
+                // if(localX == baseX && localY == baseY){
+                //     ctx.fillStyle = "red";
+                // }
+
+                //ctx.fillStyle = '#' + ap + num + ap + num + ap + num;
+                ctx.fillRect(h+x, k+y, 1, 1);
+            }
+        }
+
+        console.log("Highest: " + highest);
+        console.log("Lowest: " + lowest);
+    }
+
+    // assumed:
+    // - start & end are between 0-2
+    // - a, b, c are between 1-8
+    // then function will return value between 0 and 2
+    function combineFunc (x, start, end, a, b, c){
+        return (((1-limiter(x))*(compositeWave(x, a, b, c)))+((limiter(x))*(linearLine(x, start, end))))/3;
+    }
+
+    // verified
+    function linearLine (x, start, end){
+        return (start*3)+((((end*3)-(start*3))/2) * (x-2));
+    }
+
+    // verified
+    function compositeWave (x, a, b, c){
+        return 3+(Math.sin(a*x*0.4)+Math.sin(b*x*0.4)+Math.sin(c*x*0.4));
+    }
+
+    // verified
+    function limiter (x){
+        return Math.pow(Math.sin((x-1)/((2/(((3*Math.PI)/2)-(Math.PI/2))))), 4);
+    }
+
+    function hashHandler(px, py, salt, modulator, adder){ // sub-function within
+        return adder + ((parseInt(hash(px + salt + py), 16) / Math.pow(10, 16)) % modulator);
+    }
+
+    // input: string of any length
+    // output: 15-digit base-10 output
+    // 2^53 (or approximately 10^15) is the maximum integer representable in javascript
+    function hash(input){
+        input += "WwAZZqi3" + input + "jhq3I7u" + input + genseed; // two random strings
+        let sum = input.charCodeAt(0); // sum starts at beginning of input
+        let accumulator = ""; // final output string that gets converted to an int
+        let output = [ // 15 9-digit primes, serve as mask
+                        680646451, 
+                        765809491,
+                        390493679,
+                        544627277,
+                        856868113,
+                        704909377,
+                        572600191,
+                        821097707,
+                        230376011,
+                        184848203,
+                        473243581,
+                        687924253,
+                        446183149,
+                        856675481,
+                        557158177
+                     ];
+        for(let i = 0; i < input.length; i++){ // accumulate sum
+            sum += Math.pow(input.charCodeAt(i), 2) * i;
+        }
+        for(let i = 0; i < input.length; i++){ // mash sum with each input digit
+            output[i % 15] = (output[i % 15] ^ Math.abs(sum ^ input.charCodeAt(i))) % 10;
+        }
+        for(let i = 0; i < 15; i++){ // concatonate into string
+            accumulator += output[i];
+        }
+        return parseInt(accumulator); // return a parsed version of that string
+    }
+
+}
+    }
+</script>
